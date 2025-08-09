@@ -3,12 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
-interface User {
-  _id: Id<"users">;
-  name: string;
-  email: string;
-  createdAt: number;
-}
+// User interface is inferred from server types via useQuery; explicit local type unused and removed
 
 interface UserSelectorProps {
   onSelectUsers: (userIds: Id<"users">[]) => void;

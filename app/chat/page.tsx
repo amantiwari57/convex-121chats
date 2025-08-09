@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { InviteButton } from '../components/InviteButton';
 import { PendingInvites } from '../components/PendingInvites';

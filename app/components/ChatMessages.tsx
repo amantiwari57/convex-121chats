@@ -49,7 +49,7 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
       {messages.map((message: Doc<"messages">, index: number) => {
         const isCurrentUser = message.sender === session?.user?.id;
         const showUserName = index === 0 || messages[index - 1]?.sender !== message.sender;
-        const isLastMessage = index === messages.length - 1;
+        // const isLastMessage = index === messages.length - 1; // unused for now
         const nextMessageSameSender = index < messages.length - 1 && messages[index + 1]?.sender === message.sender;
         
         return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -29,7 +29,7 @@ export default function SignInPage() {
       } else {
         router.push("/chat");
       }
-    } catch (error) {
+    } catch (_error) {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export default function SignInPage() {
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Sign up
               </Link>

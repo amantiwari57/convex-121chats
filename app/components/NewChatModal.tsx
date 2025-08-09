@@ -37,8 +37,9 @@ export function NewChatModal({ isOpen, onClose, currentUserId, onChatCreated }: 
       onChatCreated(chatId);
       onClose();
       setSelectedUsers([]);
-    } catch (err: any) {
-      setError(err.message || "Failed to create chat");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to create chat";
+      setError(message);
     } finally {
       setLoading(false);
     }

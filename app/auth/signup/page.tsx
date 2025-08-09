@@ -72,8 +72,9 @@ export default function SignUpPage() {
       } else {
         router.push('/chat');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during registration');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An error occurred during registration';
+      setError(message);
     } finally {
       setLoading(false);
     }
