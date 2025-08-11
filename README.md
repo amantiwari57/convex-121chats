@@ -27,6 +27,8 @@ npm create convex@latest -- -t nextjs-clerk
 
 Then:
 
+## DEMO IMAGE
+<img width="2769" height="1404" alt="image" src="https://github.com/user-attachments/assets/639d651b-b017-4120-99d9-8a4184e16927" />
 
 
 ## Learn more
