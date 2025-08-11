@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Id } from '../../../convex/_generated/dataModel';
 import { ArrowLeft, Users, UserPlus } from 'lucide-react';
 
-export default function InvitePage() {
+function InvitePageContent() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -186,5 +186,17 @@ export default function InvitePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    }>
+      <InvitePageContent />
+    </Suspense>
   );
 }
