@@ -1,12 +1,12 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useSession } from "next-auth/react";
+import { useUser } from "@clerk/nextjs";
 import { Doc } from "../../convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
 
 export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
-  const { data: session } = useSession();
+  const { user } = useUser();
   const messages = useQuery(api.messages.getMessages, { chat: chatId, page: 1 });
   const users = useQuery(api.chats.getAllUsers, {});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,7 +47,7 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message: Doc<"messages">, index: number) => {
-        const isCurrentUser = message.sender === session?.user?.id;
+        const isCurrentUser = message.sender === user?.id;
         const showUserName = index === 0 || messages[index - 1]?.sender !== message.sender;
         // const isLastMessage = index === messages.length - 1; // unused for now
         const nextMessageSameSender = index < messages.length - 1 && messages[index + 1]?.sender === message.sender;
