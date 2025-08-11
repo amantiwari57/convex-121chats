@@ -29,8 +29,8 @@ export function PendingInvites() {
     }
   };
 
-  const getUserName = (userId: Id<"users">) => {
-    const user = users?.find(u => u._id === userId);
+  const getUserName = (userId: string) => {
+    const user = users?.find(u => u.clerkId === userId);
     return user?.name || user?.email || "Unknown User";
   };
 
