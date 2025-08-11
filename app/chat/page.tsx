@@ -4,11 +4,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
-import { InviteButton } from '../../components/components/InviteButton';
-import { PendingInvites } from '../../components/components/PendingInvites';
-import { ChatMessages } from '../../components/components/ChatMessages';
-import { NewChatModal } from '../../components/components/NewChatModal';
-import { UserProfileModal } from '../../components/components/UserProfileModal';
+import { InviteButton } from '../../components/chatComponents/InviteButton';
+import { PendingInvites } from '../../components/chatComponents/PendingInvites';
+import { ChatMessages } from '../../components/chatComponents/ChatMessages';
+import { NewChatModal } from '../../components/chatComponents/NewChatModal';
+import { UserProfileModal } from '../../components/chatComponents/UserProfileModal';
 import { useRouter } from "next/navigation";
 import { Id } from '../../convex/_generated/dataModel';
 
