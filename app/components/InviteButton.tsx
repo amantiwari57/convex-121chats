@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { useSession } from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
 import { Id } from '../../convex/_generated/dataModel';
 
 export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
@@ -10,7 +10,7 @@ export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  const { data: session } = useSession();
+  const { user } = useUser();
   const inviteToChat = useMutation(api.chats.inviteToChat);
   const users = useQuery(api.chats.getAllUsers, {});
 
@@ -19,7 +19,7 @@ export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
     setError('');
     setSuccess('');
 
-    if (!selectedUserId || !session?.user?.id) {
+    if (!selectedUserId || !user?.id) {
       setError('Please select a user to invite');
       return;
     }
@@ -28,7 +28,7 @@ export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
       await inviteToChat({
         chatId,
         invitedUser: selectedUserId as Id<"users">,
-        invitedBy: session.user.id as Id<"users">,
+        invitedBy: user.id as Id<"users">,
       });
       setSuccess('Invitation sent successfully!');
       setSelectedUserId('');
@@ -39,7 +39,7 @@ export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
   };
 
   // Filter out current user from the list
-  const availableUsers = users?.filter(user => user._id !== session?.user?.id) || [];
+  const availableUsers = users?.filter(u => u._id !== user?.id) || [];
 
   return (
     <>
@@ -70,9 +70,9 @@ export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
                   required
                 >
                   <option value="">Choose a user to invite...</option>
-                  {availableUsers.map((user) => (
-                    <option key={user._id} value={user._id}>
-                      {user.name} ({user.email})
+                  {availableUsers.map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.name} ({u.email})
                     </option>
                   ))}
                 </select>
@@ -107,4 +107,4 @@ export function InviteButton({ chatId }: { chatId: Id<"chat"> }) {
       )}
     </>
   );
-} 
+}

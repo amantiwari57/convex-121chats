@@ -1,12 +1,12 @@
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { useSession } from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
 import { Id } from '../../convex/_generated/dataModel';
 
 export function PendingInvites() {
-  const { data: session } = useSession();
+  const { user } = useUser();
   const pendingInvites = useQuery(api.chats.getPendingInvites, 
-    session?.user?.id ? { userId: session.user.id as Id<"users"> } : "skip"
+    user?.id ? { userId: user.id as Id<"users"> } : "skip"
   );
   const respondToInvite = useMutation(api.chats.respondToInvite);
   const users = useQuery(api.chats.getAllUsers, {});
@@ -16,12 +16,12 @@ export function PendingInvites() {
   }
 
   const handleResponse = async (chatId: Id<"chat">, accept: boolean) => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     try {
       await respondToInvite({
         chatId,
-        invitedUser: session.user.id as Id<"users">,
+        invitedUser: user.id as Id<"users">,
         accept,
       });
     } catch (err) {
