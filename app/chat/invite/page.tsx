@@ -122,7 +122,7 @@ export default function InvitePage() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Invite to Chat</h2>
               <p className="text-sm text-gray-600">
-                Select people you'd like to invite to this conversation
+                Select people you&apos;d like to invite to this conversation
               </p>
             </div>
           </div>
