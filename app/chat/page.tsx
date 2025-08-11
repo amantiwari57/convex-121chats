@@ -2,63 +2,81 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { InviteButton } from '../components/InviteButton';
-import { PendingInvites } from '../components/PendingInvites';
-import { ChatMessages } from '../components/ChatMessages';
-import { NewChatModal } from '../components/NewChatModal';
+import { useState, useEffect } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { InviteButton } from '../../components/components/InviteButton';
+import { PendingInvites } from '../../components/components/PendingInvites';
+import { ChatMessages } from '../../components/components/ChatMessages';
+import { NewChatModal } from '../../components/components/NewChatModal';
+import { UserProfileModal } from '../../components/components/UserProfileModal';
 import { useRouter } from "next/navigation";
 import { Id } from '../../convex/_generated/dataModel';
 
 interface Chat {
   _id: Id<"chat">;
-  participants: Id<"users">[];
+  participants: string[]; // Clerk user IDs
   lastMessage: {
-    userId: Id<"users">;
+    userId: string; // Clerk user ID
     body: string;
   };
-  createdBy: Id<"users">;
+  createdBy: string; // Clerk user ID
   createdAt: number;
   updatedAt: number;
 }
 
 export default function ChatPage() {
-  const { data: session, status } = useSession();
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
   const router = useRouter();
   const [selectedChatId, setSelectedChatId] = useState<Id<"chat"> | null>(null);
   const [message, setMessage] = useState('');
   const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  const createOrUpdateUser = useMutation(api.auth.createOrUpdateUser);
+  const markMessagesAsRead = useMutation(api.messages.markMessagesAsRead);
   
   const chats = useQuery(api.chats.listChats, 
-    session?.user?.id ? { userId: session.user.id as Id<"users"> } : "skip"
+    user?.id ? { userId: user.id } : "skip"
   );
   const sendMessage = useMutation(api.messages.sendMessage);
   const users = useQuery(api.chats.getAllUsers, {});
 
-  // Show loading state while NextAuth is loading
-  if (status === "loading") {
+  // Create or update user in Convex when user loads
+  useEffect(() => {
+    if (user?.id && user?.emailAddresses?.[0]?.emailAddress) {
+      createOrUpdateUser({
+        clerkId: user.id,
+        email: user.emailAddresses[0].emailAddress,
+        name: user.fullName || user.firstName || user.emailAddresses[0].emailAddress,
+      });
+    }
+  }, [user, createOrUpdateUser]);
+
+  // Show loading state while Clerk is loading
+  if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
       </div>
     );
   }
 
   // Redirect to sign-in if user is not authenticated
-  if (status === "unauthenticated") {
+  if (!user) {
     router.push("/auth/signin");
     return null;
   }
 
   const handleSendMessage = async () => {
-    if (!selectedChatId || !session?.user?.id || !message.trim()) return;
+    if (!selectedChatId || !user?.id || !message.trim()) return;
 
     try {
       await sendMessage({
         chat: selectedChatId,
         body: message.trim(),
-        sender: session.user.id as Id<"users">,
+        sender: user.id,
       });
       setMessage('');
     } catch (error) {
@@ -71,29 +89,58 @@ export default function ChatPage() {
   };
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" });
+    signOut(() => router.push("/"));
   };
 
-  const getUserName = (userId: Id<"users">) => {
-    const user = users?.find(u => u._id === userId);
-    return user?.name || user?.email || "Unknown User";
+  const handleSelectChat = (chatId: Id<"chat">) => {
+    setSelectedChatId(chatId);
+    // Mark messages as read when selecting a chat
+    if (user?.id) {
+      markMessagesAsRead({
+        chat: chatId,
+        userId: user.id,
+      });
+    }
+  };
+
+  const getUserName = (userId: string) => {
+    const convexUser = users?.find(u => u.clerkId === userId);
+    return convexUser?.name || convexUser?.email || "Unknown User";
   };
 
   const selectedChat = chats?.find(chat => chat._id === selectedChatId);
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col">
+    <div className="h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+      <header className="bg-black border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">ChatApp</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              Welcome, {session?.user?.name || session?.user?.email}
-            </span>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden text-white hover:text-gray-300 transition-colors p-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-semibold text-white">ChatApp</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="text-white hover:text-gray-300 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-sm hidden sm:inline">
+                {user?.fullName || user?.emailAddresses[0]?.emailAddress}
+              </span>
+            </button>
             <button
               onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+              className="bg-white text-black hover:bg-gray-100 px-4 py-2 rounded-md text-sm transition-colors font-medium"
             >
               Sign Out
             </button>
@@ -101,51 +148,69 @@ export default function ChatPage() {
         </div>
       </header>
 
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main chat interface */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Chat list */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative inset-y-0 left-0 z-30 w-80 bg-gray-50 border-r border-gray-300 flex flex-col min-w-0 transition-transform duration-300 ease-in-out`}>
+          <div className="p-4 border-b border-gray-300 bg-white flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Your Chats</h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="md:hidden text-gray-500 hover:text-gray-700 p-1"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <h2 className="text-lg font-semibold text-black">Conversations</h2>
+              </div>
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm transition-colors font-medium"
                 onClick={() => setShowNewChatModal(true)}
               >
-                New Chat
+                + New Chat
               </button>
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {chats?.length === 0 ? (
-              <div className="text-gray-500 text-center py-8 px-4">
+              <div className="text-gray-600 text-center py-8 px-4">
                 <div className="text-4xl mb-4">💬</div>
-                <div className="text-lg font-medium mb-2">No chats yet</div>
-                <div className="text-sm">Create your first chat to get started!</div>
+                <div className="text-lg font-medium mb-2 text-black">No conversations yet</div>
+                <div className="text-sm">Start your first conversation!</div>
               </div>
             ) : (
               <div className="space-y-1 p-2">
                 {chats?.map((chat: Chat) => (
                   <div
                     key={chat._id}
-                    onClick={() => setSelectedChatId(chat._id)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    onClick={() => handleSelectChat(chat._id)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors border ${
                       selectedChatId === chat._id 
-                        ? 'bg-blue-50 border border-blue-200' 
-                        : 'hover:bg-gray-50'
+                        ? 'bg-black text-white border-black' 
+                        : 'bg-white hover:bg-gray-100 border-gray-200'
                     }`}
                   >
-                    <div className="font-medium text-gray-900 mb-1">
+                    <div className={`font-medium mb-1 ${selectedChatId === chat._id ? 'text-white' : 'text-black'}`}>
                       {chat.participants
-                        .filter(p => p !== session?.user?.id)
+                        .filter(p => p !== user?.id)
                         .map(p => getUserName(p))
                         .join(', ') || 'Personal Chat'}
                     </div>
-                    <div className="text-sm text-gray-600 truncate mb-1">
+                    <div className={`text-sm truncate mb-1 ${selectedChatId === chat._id ? 'text-gray-300' : 'text-gray-600'}`}>
                       {chat.lastMessage.body}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className={`text-xs ${selectedChatId === chat._id ? 'text-gray-400' : 'text-gray-500'}`}>
                       {new Date(chat.updatedAt).toLocaleDateString()} at {new Date(chat.updatedAt).toLocaleTimeString()}
                     </div>
                   </div>
@@ -156,20 +221,20 @@ export default function ChatPage() {
         </div>
 
         {/* Main chat area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {selectedChatId && selectedChat ? (
             <>
               {/* Chat header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="bg-white border-b border-gray-300 px-6 py-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-semibold text-black">
                       {selectedChat.participants
-                        .filter(p => p !== session?.user?.id)
+                        .filter(p => p !== user?.id)
                         .map(p => getUserName(p))
                         .join(', ') || 'Personal Chat'}
                     </h3>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-600">
                       {selectedChat.participants.length} participant{selectedChat.participants.length !== 1 ? 's' : ''}
                     </div>
                   </div>
@@ -178,12 +243,12 @@ export default function ChatPage() {
               </div>
 
               {/* Messages area */}
-              <div className="flex-1 bg-gray-50">
+              <div className="flex-1 bg-gray-50 min-h-0">
                 <ChatMessages chatId={selectedChatId} />
               </div>
 
               {/* Message input */}
-              <div className="bg-white border-t border-gray-200 p-4">
+              <div className="bg-white border-t border-gray-300 p-4 flex-shrink-0">
                 <div className="flex space-x-3">
                   <input
                     type="text"
@@ -191,12 +256,12 @@ export default function ChatPage() {
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 rounded-full border text-black border-gray-300 px-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 rounded-lg border text-black border-gray-300 px-4 py-3 focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!message.trim()}
-                    className="bg-blue-600 text-white rounded-full px-6 py-2 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-black text-white rounded-lg px-6 py-3 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     Send
                   </button>
@@ -207,13 +272,13 @@ export default function ChatPage() {
             <div className="flex-1 flex items-center justify-center bg-gray-50">
               <div className="text-center">
                 <div className="text-6xl mb-4">💬</div>
-                <h3 className="text-xl font-medium text-gray-900 mb-2">Welcome to ChatApp</h3>
-                <p className="text-gray-500 mb-6">Select a chat from the sidebar to start messaging</p>
+                <h3 className="text-xl font-semibold text-black mb-2">Welcome to ChatApp</h3>
+                <p className="text-gray-600 mb-6">Select a conversation to start messaging</p>
                 <button
                   onClick={() => setShowNewChatModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+                  className="bg-black hover:bg-gray-800 text-white px-6 py-3 rounded-lg transition-colors font-medium"
                 >
-                  Start New Chat
+                  Start New Conversation
                 </button>
               </div>
             </div>
@@ -228,8 +293,14 @@ export default function ChatPage() {
       <NewChatModal
         isOpen={showNewChatModal}
         onClose={() => setShowNewChatModal(false)}
-        currentUserId={session?.user?.id || ""}
+        currentUserId={user?.id || ""}
         onChatCreated={handleChatCreated}
+      />
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
     </div>
   );

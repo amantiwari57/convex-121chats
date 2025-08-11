@@ -8,7 +8,7 @@ After the initial setup (<2 minutes) you'll have a working full-stack app using:
 - [React](https://react.dev/) as your frontend (web page interactivity)
 - [Next.js](https://nextjs.org/) for optimized web hosting and page routing
 - [Tailwind](https://tailwindcss.com/) for building great looking accessible UI
-- [Nextauth](https://clerk.com/) for authentication
+- [Clerk](https://clerk.com/) for authentication
 
 ## Get started
 
