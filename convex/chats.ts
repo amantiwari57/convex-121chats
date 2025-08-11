@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export const createNewChat = mutation({
   args: {
-    createdBy: v.id("users"),
+    createdBy: v.string(), // Clerk user ID
     initialMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -24,14 +24,14 @@ export const createNewChat = mutation({
 
 export const createChat = mutation({
   args: {
-    participants: v.array(v.id("users")),
+    participants: v.array(v.string()), // Clerk user IDs
     lastMessage: v.object({
-      userId: v.id("users"),
+      userId: v.string(), // Clerk user ID
       body: v.string(),
     }),
     createdAt: v.number(),
     updatedAt: v.number(),
-    createdBy: v.id("users"),
+    createdBy: v.string(), // Clerk user ID
   },
   handler: async (ctx, args) => {
     const chat = await ctx.db.insert("chat", {
@@ -48,7 +48,7 @@ export const createChat = mutation({
 
 export const listChats = query({
   args: {
-    userId: v.id("users"),
+    userId: v.string(), // Clerk user ID
   },
   handler: async (ctx, args) => {
     // Get all chats where the user is a participant
@@ -69,8 +69,8 @@ export const listChats = query({
 export const inviteToChat = mutation({
   args: {
     chatId: v.id("chat"),
-    invitedUser: v.id("users"),
-    invitedBy: v.id("users"),
+    invitedUser: v.string(), // Clerk user ID
+    invitedBy: v.string(), // Clerk user ID
   },
   handler: async (ctx, args) => {
     // Check if the inviter is a participant in the chat
@@ -100,7 +100,7 @@ export const inviteToChat = mutation({
 export const respondToInvite = mutation({
   args: {
     chatId: v.id("chat"),
-    invitedUser: v.id("users"),
+    invitedUser: v.string(), // Clerk user ID
     accept: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -140,7 +140,7 @@ export const respondToInvite = mutation({
 
 export const getPendingInvites = query({
   args: {
-    userId: v.id("users"),
+    userId: v.string(), // Clerk user ID
   },
   handler: async (ctx, args) => {
     const invites = await ctx.db
@@ -167,7 +167,7 @@ export const getPendingInvites = query({
 
 export const getChats = query({
   args: {
-    userId: v.id("users"),
+    userId: v.string(), // Clerk user ID
   },
   handler: async (ctx, args) => {
     // Get all chats where the user is a participant
@@ -194,9 +194,9 @@ export const getAllUsers = query({
       .order("desc")
       .collect();
     
-    // Don't return passwords
     return users.map(user => ({
       _id: user._id,
+      clerkId: user.clerkId,
       name: user.name,
       email: user.email,
       createdAt: user.createdAt,
@@ -207,8 +207,8 @@ export const getAllUsers = query({
 // Create a chat with selected participants
 export const createChatWithParticipants = mutation({
   args: {
-    createdBy: v.id("users"),
-    participantIds: v.array(v.id("users")),
+    createdBy: v.string(), // Clerk user ID
+    participantIds: v.array(v.string()), // Clerk user IDs
     initialMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
