@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SessionProvider from "./components/SessionProvider";
 import ConvexClientProvider from "../components/ConvexClientProvider";
+import { ClerkProvider } from '@clerk/nextjs'
 
 const geist = Geist({
-  variable: "--font-geist-sans",
+  variable: "--geist-sans",
   subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--geist-mono",
   subsets: ["latin"],
 });
 
@@ -27,11 +27,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geist.variable} ${geistMono.variable} antialiased`}>
-        <SessionProvider>
+        <ClerkProvider
+          publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+          signInUrl="/auth/signin"
+          signUpUrl="/auth/signup"
+          afterSignInUrl="/chat"
+          afterSignUpUrl="/chat"
+          appearance={{
+            variables: {
+              colorPrimary: '#2563eb'
+            }
+          }}
+        >
           <ConvexClientProvider>
             {children}
           </ConvexClientProvider>
-        </SessionProvider>
+        </ClerkProvider>
       </body>
     </html>
   );
