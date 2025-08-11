@@ -26,6 +26,9 @@ const ALLOWED_FILE_TYPES = [
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { fileName, fileType, fileSize } = await request.json();
