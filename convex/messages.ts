@@ -6,19 +6,36 @@ export const sendMessage = mutation({
     chat: v.id("chat"),
     sender: v.string(), // Clerk user ID
     body: v.string(),
+    mediaUrl: v.optional(v.string()),
+    mediaType: v.optional(v.string()),
+    fileName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("messages", {
+    const messageData: any = {
       chat: args.chat,
       sender: args.sender,
       body: args.body,
       createdAt: Date.now(),
-    });
+    };
+
+    // Add media fields if provided
+    if (args.mediaUrl) {
+      messageData.mediaUrl = args.mediaUrl;
+      messageData.mediaType = args.mediaType;
+      messageData.fileName = args.fileName;
+    }
+
+    await ctx.db.insert("messages", messageData);
+
+    // Update last message - show media indicator if it's a media message
+    const lastMessageBody = args.mediaUrl 
+      ? (args.mediaType === "image" ? "📷 Image" : "🎥 Video")
+      : args.body;
 
     await ctx.db.patch(args.chat, {
       lastMessage: {
         userId: args.sender,
-        body: args.body,
+        body: lastMessageBody,
       },
       updatedAt: Date.now(),
     });

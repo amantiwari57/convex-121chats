@@ -4,11 +4,12 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState, useEffect } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
-import { InviteButton } from '../../components/chatComponents/InviteButton';
-import { PendingInvites } from '../../components/chatComponents/PendingInvites';
-import { ChatMessages } from '../../components/chatComponents/ChatMessages';
-import { NewChatModal } from '../../components/chatComponents/NewChatModal';
-import { UserProfileModal } from '../../components/chatComponents/UserProfileModal';
+import { InviteButton } from '../../components/components/InviteButton';
+import { PendingInvites } from '../../components/components/PendingInvites';
+import { ChatMessages } from '../../components/components/ChatMessages';
+import { NewChatModal } from '../../components/components/NewChatModal';
+import { UserProfileModal } from '../../components/components/UserProfileModal';
+import { FileUpload } from '../../components/components/FileUpload';
 import { useRouter } from "next/navigation";
 import { Id } from '../../convex/_generated/dataModel';
 
@@ -69,19 +70,26 @@ export default function ChatPage() {
     return null;
   }
 
-  const handleSendMessage = async () => {
-    if (!selectedChatId || !user?.id || !message.trim()) return;
+  const handleSendMessage = async (mediaUrl?: string, mediaType?: string, fileName?: string) => {
+    if (!selectedChatId || !user?.id || (!message.trim() && !mediaUrl)) return;
 
     try {
       await sendMessage({
         chat: selectedChatId,
-        body: message.trim(),
+        body: message.trim() || (mediaUrl ? '' : ''),
         sender: user.id,
+        mediaUrl,
+        mediaType,
+        fileName,
       });
       setMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
     }
+  };
+
+  const handleFileUpload = (mediaUrl: string, mediaType: string, fileName: string) => {
+    handleSendMessage(mediaUrl, mediaType, fileName);
   };
 
   const handleChatCreated = (chatId: Id<"chat">) => {
@@ -243,25 +251,29 @@ export default function ChatPage() {
               </div>
 
               {/* Messages area */}
-              <div className="flex-1 bg-gray-50 min-h-0">
+              <div className="flex-1 bg-gray-50 min-h-0 flex flex-col">
                 <ChatMessages chatId={selectedChatId} />
               </div>
 
               {/* Message input */}
-              <div className="bg-white border-t border-gray-300 p-4 flex-shrink-0">
-                <div className="flex space-x-3">
+              <div className="bg-white border-t border-gray-300 p-3 sm:p-4 flex-shrink-0">
+                <div className="flex items-end space-x-2 sm:space-x-3">
+                  <FileUpload
+                    onFileUpload={handleFileUpload}
+                    disabled={!selectedChatId}
+                  />
                   <input
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 rounded-lg border text-black border-gray-300 px-4 py-3 focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+                    className="flex-1 rounded-lg border text-black border-gray-300 px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:border-black focus:ring-1 focus:ring-black text-sm sm:text-base"
                   />
                   <button
-                    onClick={handleSendMessage}
+                    onClick={() => handleSendMessage()}
                     disabled={!message.trim()}
-                    className="bg-black text-white rounded-lg px-6 py-3 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="bg-black text-white rounded-lg px-4 py-2 sm:px-6 sm:py-3 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base"
                   >
                     Send
                   </button>

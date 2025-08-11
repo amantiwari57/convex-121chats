@@ -165,6 +165,15 @@ export const getPendingInvites = query({
   },
 });
 
+export const getChat = query({
+  args: {
+    chatId: v.id("chat"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.chatId);
+  },
+});
+
 export const getChats = query({
   args: {
     userId: v.string(), // Clerk user ID

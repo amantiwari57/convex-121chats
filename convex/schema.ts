@@ -43,6 +43,9 @@ export default defineSchema({
       userId: v.string(), // Clerk user ID
       readAt: v.number(),
     }))),
+    mediaUrl: v.optional(v.string()), // URL for uploaded media
+    mediaType: v.optional(v.string()), // "image" or "video"
+    fileName: v.optional(v.string()), // Original file name
   }).index("by_chat", ["chat", "createdAt"]),
   chatInvites: defineTable({
     chatId: v.id("chat"),
