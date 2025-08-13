@@ -44,7 +44,7 @@ Make sure to cite sources using [1], [2], etc. format and provide the source lis
             encoder.encode(
               `data: ${JSON.stringify({
                 type: "search",
-                message: "Searching the web...",
+                message: "processing your request...",
               })}\n\n`,
             ),
           );
