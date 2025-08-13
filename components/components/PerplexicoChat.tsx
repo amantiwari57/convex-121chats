@@ -84,7 +84,7 @@ export default function PerplexicoChat() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let streamedContent = "";
-      let sources: any[] = [];
+      let sources: Array<{ title: string; url: string; content: string; source: string }> = [];
       let followUpQuestions: string[] = [];
 
       if (reader) {
@@ -124,7 +124,7 @@ export default function PerplexicoChat() {
                     setStreamingStatus("");
                     setStreamingMessage("");
                   }
-                } catch (e) {
+                } catch (_e) {
                   // Skip invalid JSON
                 }
               }

@@ -106,7 +106,7 @@ export const perplexitySearchTool = tool(
                   workingApproach = approach.name;
                   break;
                 }
-              } catch (jsonError) {
+              } catch (_jsonError) {
                 console.log(
                   `⚠️ ${approach.name} - not JSON, trying next approach`,
                 );
@@ -234,7 +234,7 @@ export const aiAnalysisTool = tool(
 );
 
 // Helper function to create summary
-function createSummary(sources: any[], userQuery: string): string {
+function createSummary(sources: Array<{ content?: string; title: string; index: number }>, userQuery: string): string {
   if (sources.length === 0) return "No information found.";
 
   const keyPoints = sources
@@ -261,7 +261,7 @@ function createSummary(sources: any[], userQuery: string): string {
 // Helper function to generate follow-up questions
 function generateFollowUpQuestions(
   userQuery: string,
-  sources: any[],
+  _sources: Array<{ content?: string; title: string; index: number }>,
 ): string[] {
   const questions: string[] = [];
 

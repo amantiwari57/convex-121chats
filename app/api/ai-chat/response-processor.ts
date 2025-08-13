@@ -1,26 +1,27 @@
 import { SearchResult, ProcessedResponse } from "./types";
 
 // Process LangGraph agent response and extract structured data
-export function processAgentResponse(result: any): ProcessedResponse {
+export function processAgentResponse(result: unknown): ProcessedResponse {
   let responseContent = "";
   let sources: SearchResult[] = [];
   let followUpQuestions: string[] = [];
 
-  if ("error" in result) {
-    responseContent = result.error;
+  if (result && typeof result === "object" && "error" in result) {
+    responseContent = (result as { error: string }).error;
   } else if (
-    "messages" in result &&
-    result.messages &&
-    result.messages.length > 0
+    result && typeof result === "object" && "messages" in result
   ) {
-    // Extract the final message content
-    const finalMessage = result.messages[result.messages.length - 1];
-    responseContent = extractMessageContent(finalMessage);
+    const messages = (result as { messages: unknown[] }).messages;
+    if (Array.isArray(messages) && messages.length > 0) {
+      // Extract the final message content
+      const finalMessage = messages[messages.length - 1];
+      responseContent = extractMessageContent(finalMessage);
 
-    // Extract structured data from intermediate results
-    const structuredData = extractStructuredData(result.messages);
-    sources = structuredData.sources;
-    followUpQuestions = structuredData.followUpQuestions;
+      // Extract structured data from intermediate results
+      const structuredData = extractStructuredData(messages);
+      sources = structuredData.sources;
+      followUpQuestions = structuredData.followUpQuestions;
+    }
   } else {
     responseContent = "I encountered an error processing your request.";
   }
@@ -33,17 +34,20 @@ export function processAgentResponse(result: any): ProcessedResponse {
 }
 
 // Extract content from a message, handling different content types
-function extractMessageContent(message: any): string {
-  if (typeof message.content === "string") {
-    return message.content;
-  } else if (message.content) {
-    return JSON.stringify(message.content);
+function extractMessageContent(message: unknown): string {
+  if (message && typeof message === "object" && "content" in message) {
+    const content = (message as { content: unknown }).content;
+    if (typeof content === "string") {
+      return content;
+    } else if (content) {
+      return JSON.stringify(content);
+    }
   }
   return "I encountered an error processing your request.";
 }
 
 // Extract structured data (sources, follow-up questions) from message chain
-function extractStructuredData(messages: any[]): {
+function extractStructuredData(messages: unknown[]): {
   sources: SearchResult[];
   followUpQuestions: string[];
 } {
@@ -51,11 +55,11 @@ function extractStructuredData(messages: any[]): {
   let followUpQuestions: string[] = [];
 
   for (const msg of messages) {
-    if (msg.content && typeof msg.content === "string") {
+    if (msg && typeof msg === "object" && "content" in msg && typeof (msg as { content: unknown }).content === "string") {
       try {
-        const parsed = JSON.parse(msg.content);
+        const parsed = JSON.parse((msg as { content: string }).content);
         if (parsed.type === "perplexity_analysis" && parsed.sources) {
-          sources = parsed.sources.map((s: any) => ({
+          sources = parsed.sources.map((s: { title: string; url: string; content: string; source: string }) => ({
             title: s.title,
             url: s.url,
             content: s.content,

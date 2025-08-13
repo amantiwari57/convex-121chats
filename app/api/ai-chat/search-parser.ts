@@ -55,7 +55,7 @@ export async function parseSearchResults(
             content: content.substring(0, 500),
             source: new URL(url).hostname,
           });
-        } catch (urlError) {
+        } catch (_urlError) {
           // Skip invalid URLs
           continue;
         }
@@ -82,14 +82,14 @@ export async function parseSearchResults(
 // JSON parsing function
 export async function parseJSONResults(
   query: string,
-  jsonData: any,
+  jsonData: { results: Array<{ title?: string; url?: string; content?: string; description?: string; source?: string }> },
   approach: string,
 ): Promise<ParsedSearchResults> {
   console.log(`🔍 Parsing JSON search results...`);
 
   const results: SearchResult[] = jsonData.results
     .slice(0, 5)
-    .map((result: any) => ({
+    .map((result: { title?: string; url?: string; content?: string; description?: string; source?: string }) => ({
       title: result.title || "No title",
       url: result.url || "",
       content: result.content || result.description || "",

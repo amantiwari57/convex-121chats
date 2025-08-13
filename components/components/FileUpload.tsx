@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Paperclip, X, Upload } from 'lucide-react';
+import { Paperclip, Upload } from 'lucide-react';
 
 interface FileUploadProps {
   onFileUpload: (mediaUrl: string, mediaType: string, fileName: string) => void;
