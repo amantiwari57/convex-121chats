@@ -54,4 +54,21 @@ export default defineSchema({
     status: v.string(), // "pending", "accepted", "rejected"
     createdAt: v.number(),
   }).index("by_invited_user", ["invitedUser", "status"]),
+  
+  // AI Chat Tables for Perplexico (Single shared chat)
+  perplexicoMessages: defineTable({
+    userId: v.string(), // Clerk user ID who sent the message
+    role: v.string(), // "user" or "assistant"
+    content: v.string(),
+    sources: v.optional(v.array(v.object({
+      title: v.string(),
+      url: v.string(),
+      content: v.string(),
+      source: v.string(),
+    }))),
+    followUpQuestions: v.optional(v.array(v.string())),
+    searchQuery: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_created_at", ["createdAt"]),
+
 });

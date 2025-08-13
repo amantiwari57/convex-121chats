@@ -133,6 +133,23 @@ export default function ChatPage() {
               </svg>
             </button>
             <h1 className="text-xl font-semibold text-white">ChatApp</h1>
+            <nav className="hidden md:flex items-center gap-4">
+              <button
+                onClick={() => router.push("/chat")}
+                className="text-white hover:text-gray-300 transition-colors px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => router.push("/perplexico")}
+                className="text-white hover:text-gray-300 transition-colors px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Perplexico AI
+              </button>
+            </nav>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -191,6 +208,33 @@ export default function ChatPage() {
           </div>
           
           <div className="flex-1 overflow-y-auto min-h-0">
+            {/* Perplexico AI Chat */}
+            <div className="p-2 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+              <button
+                onClick={() => router.push("/perplexico")}
+                className="w-full p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center gap-3 shadow-sm"
+              >
+                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-sm">Perplexico AI</div>
+                  <div className="text-xs text-white text-opacity-80">AI-powered research assistant</div>
+                </div>
+                <div className="ml-auto">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+
+            <div className="px-4 py-2 border-b border-gray-100">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Personal Chats</h3>
+            </div>
+            
             {chats?.length === 0 ? (
               <div className="text-gray-600 text-center py-8 px-4">
                 <div className="text-4xl mb-4">💬</div>
