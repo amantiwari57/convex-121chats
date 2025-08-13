@@ -16,6 +16,7 @@ import type {
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
 import type * as chats from "../chats.js";
+import type * as crons from "../crons.js";
 import type * as messages from "../messages.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as tasks from "../tasks.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   auth: typeof auth;
   chats: typeof chats;
+  crons: typeof crons;
   messages: typeof messages;
   myFunctions: typeof myFunctions;
   tasks: typeof tasks;
