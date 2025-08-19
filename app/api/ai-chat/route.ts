@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json();
+    const { message, imageUrls } = await request.json();
 
     if (!message) {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -51,7 +51,7 @@ Make sure to cite sources using [1], [2], etc. format and provide the source lis
 
           // Import and use the askQuestion function
           const { askQuestion } = await import("./agent");
-          const result = await askQuestion(message);
+          const result = await askQuestion(message, imageUrls);
 
           controller.enqueue(
             encoder.encode(

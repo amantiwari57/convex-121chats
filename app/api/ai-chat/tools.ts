@@ -249,13 +249,30 @@ function createSummary(sources: Array<{ content?: string; title: string; index: 
     })
     .filter((point) => point);
 
-  return (
-    `Based on the search results for "${userQuery}", here are the key findings:\n\n` +
-    keyPoints
-      .slice(0, 3)
-      .map((point, index) => `${index + 1}. ${point} [${sources[index].index}]`)
-      .join("\n\n")
-  );
+  // Create a more structured response with markdown formatting
+  let summary = `## ${userQuery}\n\n`;
+  
+  // Add key findings as bullet points
+  summary += "### Key Findings:\n\n";
+  keyPoints
+    .slice(0, 4)
+    .forEach((point, index) => {
+      summary += `• **${point.substring(0, 100)}${point.length > 100 ? '...' : ''}** [${sources[index].index}]\n`;
+    });
+
+  // Add a comparison table if there are multiple sources with different aspects
+  if (sources.length >= 2) {
+    summary += "\n### Source Comparison:\n\n";
+    summary += "| Source | Title | Key Point |\n";
+    summary += "|--------|-------|----------|\n";
+    sources.slice(0, 3).forEach((source, index) => {
+      const shortTitle = source.title.substring(0, 30) + (source.title.length > 30 ? '...' : '');
+      const shortContent = keyPoints[index]?.substring(0, 50) + (keyPoints[index]?.length > 50 ? '...' : '');
+      summary += `| [${source.index}] | ${shortTitle} | ${shortContent} |\n`;
+    });
+  }
+
+  return summary;
 }
 
 // Helper function to generate follow-up questions

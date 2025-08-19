@@ -1,8 +1,9 @@
 "use client";
 
+import PerplexicoChat from "@/components/components/PerplexicoChat";
 import { useUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
-import PerplexicoChat from "../../components/components/PerplexicoChat";
+
 
 export default function PerplexicoPage() {
   const { user, isLoaded } = useUser();

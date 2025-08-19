@@ -16,12 +16,18 @@ export const agent = createReactAgent({
 });
 
 // Process a question using the LangGraph agent
-export async function askQuestion(question: string) {
+export async function askQuestion(question: string, imageUrls?: string[]) {
   try {
     console.log(`\n🤖 Processing question: "${question}"`);
+    if (imageUrls && imageUrls.length > 0) {
+      console.log(`📸 With ${imageUrls.length} image(s): ${imageUrls.join(', ')}`);
+    }
     
     // Check if the user is asking for search/research
     const needsSearch = shouldUseSearchTools(question);
+    
+    // Prepare the content with images if provided
+    const content = createContentWithImages(question, imageUrls, needsSearch);
     
     if (needsSearch) {
       console.log(`⏳ User requested search/research - using tools...\n`);
@@ -29,7 +35,7 @@ export async function askQuestion(question: string) {
         messages: [
           {
             role: "user",
-            content: createSearchPrompt(question),
+            content,
           },
         ],
       });
@@ -41,7 +47,7 @@ export async function askQuestion(question: string) {
       const result = await model.invoke([
         {
           role: "user",
-          content: createGeneralPrompt(question),
+          content,
         },
       ]);
       console.log("\n🤖 General AI response:", result);
@@ -90,27 +96,48 @@ function shouldUseSearchTools(question: string): boolean {
 
 // Create the prompt for search/research questions
 function createSearchPrompt(question: string): string {
-  return `You are Perplexico, an AI assistant that provides comprehensive, well-researched answers with sources. For the user's question: "${question}"
+  return `You are Perplexico, an AI research assistant. For the user's question: "${question}"
 
-1. First, search for current information using the perplexity_search tool
-2. Then analyze the results using the ai_analysis tool to provide a structured response
-3. Provide a clear, informative answer with proper source citations
-4. Include relevant follow-up questions
+1) Use the perplexity_search tool to gather up-to-date sources.
+2) Use the ai_analysis tool to structure findings.
+3) Produce a concise, point-wise answer with:
+   - A short overview
+   - Bullet points covering key aspects
+   - Optional lightweight table(s) if it helps compare items
+   - Inline source references like [1], [2] after relevant statements
+   - Include direct links next to items when helpful
+4) Offer 2-3 follow-up questions.
 
-Make sure to cite sources using [1], [2], etc. format and provide the source list at the end.`;
+Prefer clear formatting. Keep it factual and avoid fluff.`;
 }
 
 // Create the prompt for general questions
 function createGeneralPrompt(question: string): string {
-  return `You are Perplexico, a helpful and knowledgeable AI assistant. The user asked: "${question}"
+  return `You are Perplexico, a helpful AI assistant. The user asked: "${question}"
 
-Please provide a helpful, informative response based on your general knowledge. Be conversational, clear, and engaging. If appropriate, you can:
+Provide a clear, structured response with:
+- A short overview
+- Bullet points covering key details
+- Optional quick comparison table when relevant
+- Suggest 2 short follow-up questions at the end.`;
+}
 
-- Explain concepts in simple terms
-- Provide examples or analogies
-- Offer practical advice or tips
-- Ask clarifying questions if needed
-- Suggest related topics of interest
+// Create content with images if provided
+function createContentWithImages(question: string, imageUrls?: string[], needsSearch: boolean = false): string {
+  let content = needsSearch ? createSearchPrompt(question) : createGeneralPrompt(question);
+  
+  if (imageUrls && imageUrls.length > 0) {
+    const imageSection = imageUrls.map((url, index) => 
+      `![Image ${index + 1}](${url})`
+    ).join('\n\n');
+    
+    content = `${content}
 
-Keep your response focused and helpful without being overly verbose.`;
+**Images provided by user:**
+${imageSection}
+
+Please analyze any images provided along with the text question. If the images are relevant to the question, incorporate your analysis of them into your response.`;
+  }
+  
+  return content;
 }

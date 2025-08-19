@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geist.variable} ${geistMono.variable} antialiased w-full`}>
         <ClerkProvider
           publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
           signInUrl="/auth/signin"
@@ -40,7 +40,9 @@ export default function RootLayout({
           }}
         >
           <ConvexClientProvider>
-            {children}
+            <div className="w-full h-full">
+              {children}
+            </div>
           </ConvexClientProvider>
         </ClerkProvider>
       </body>

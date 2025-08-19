@@ -77,3 +77,5 @@ function extractStructuredData(messages: unknown[]): {
 
   return { sources, followUpQuestions };
 }
+
+// Optionally we could add HTML transformation here in future to enhance formatting further

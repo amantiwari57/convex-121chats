@@ -17,6 +17,49 @@ export const addPerplexicoMessage = mutation({
     searchQuery: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Enforce rate limits for user-sent messages only
+    if (args.role === "user") {
+      const now = Date.now();
+      const oneMinuteAgo = now - 60 * 1000;
+      const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
+
+      // Count user messages in last 24h (daily cap)
+      const lastDayMessages = await ctx.db
+        .query("perplexicoMessages")
+        .withIndex("by_created_at")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("userId"), args.userId),
+            q.gt(q.field("createdAt"), twentyFourHoursAgo),
+            q.eq(q.field("role"), "user"),
+          ),
+        )
+        .collect();
+
+      const dailyLimit = 10;
+      if (lastDayMessages.length >= dailyLimit) {
+        throw new Error("Daily chat limit reached (10 per day). Please try again later.");
+      }
+
+      // Sliding window: last 60 seconds
+      const lastMinuteMessages = await ctx.db
+        .query("perplexicoMessages")
+        .withIndex("by_created_at")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("userId"), args.userId),
+            q.gt(q.field("createdAt"), oneMinuteAgo),
+            q.eq(q.field("role"), "user"),
+          ),
+        )
+        .collect();
+
+      const perMinuteLimit = 5;
+      if (lastMinuteMessages.length >= perMinuteLimit) {
+        throw new Error("Rate limit exceeded (5 chats per minute). Please wait a moment.");
+      }
+    }
+
     const messageId = await ctx.db.insert("perplexicoMessages", {
       userId: args.userId, // Always the actual user ID, AI responses also belong to the user who asked
       role: args.role,
@@ -89,6 +132,55 @@ export const getPerplexicoMessageCount = query({
       .collect();
     
     return messages.length;
+  },
+});
+
+// Get remaining credits (daily and per-minute)
+export const getPerplexicoCredits = query({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60 * 1000;
+    const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
+
+    const dailyLimit = 10;
+    const perMinuteLimit = 5;
+
+    const lastDayMessages = await ctx.db
+      .query("perplexicoMessages")
+      .withIndex("by_created_at")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("userId"), args.userId),
+          q.gt(q.field("createdAt"), twentyFourHoursAgo),
+          q.eq(q.field("role"), "user"),
+        ),
+      )
+      .collect();
+
+    const lastMinuteMessages = await ctx.db
+      .query("perplexicoMessages")
+      .withIndex("by_created_at")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("userId"), args.userId),
+          q.gt(q.field("createdAt"), oneMinuteAgo),
+          q.eq(q.field("role"), "user"),
+        ),
+      )
+      .collect();
+
+    const remainingDaily = Math.max(0, dailyLimit - lastDayMessages.length);
+    const remainingPerMinute = Math.max(0, perMinuteLimit - lastMinuteMessages.length);
+
+    return {
+      limits: { daily: dailyLimit, perMinute: perMinuteLimit },
+      remaining: { daily: remainingDaily, perMinute: remainingPerMinute },
+      used: { daily: lastDayMessages.length, perMinute: lastMinuteMessages.length },
+      timestamp: now,
+    };
   },
 });
 

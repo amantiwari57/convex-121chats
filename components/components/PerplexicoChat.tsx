@@ -5,7 +5,10 @@ import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { Send, Bot, User, ExternalLink } from "lucide-react";
+import { Send, Bot, User, ExternalLink, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { ChatInput, ChatInputTextArea, ChatInputSubmit, ChatInputUpload } from "@/components/ui/chat-input";
 
 interface Message {
   _id: Id<"perplexicoMessages">;
@@ -30,6 +33,8 @@ export default function PerplexicoChat() {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [streamingStatus, setStreamingStatus] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<Array<{url: string, fileName: string, fileType: string}>>([]);
 
   // Convex queries and mutations for single shared chat
   const messages = useQuery(
@@ -37,6 +42,10 @@ export default function PerplexicoChat() {
     user?.id ? { userId: user.id, limit: 100 } : "skip"
   );
   const addMessage = useMutation(api.ai.addPerplexicoMessage);
+  const credits = useQuery(
+    api.ai.getPerplexicoCredits,
+    user?.id ? { userId: user.id } : "skip",
+  );
   
 
 
@@ -51,34 +60,58 @@ export default function PerplexicoChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleImageUpload = (url: string, info: { fileName: string; fileType: string }) => {
+    setUploadedImages(prev => [...prev, { url, fileName: info.fileName, fileType: info.fileType }]);
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || isLoading || !user?.id) return;
+    if ((!message.trim() && uploadedImages.length === 0) || isLoading || !user?.id) return;
 
     const userMessage = message;
+    const imageUrls = uploadedImages.map(img => img.url);
     setMessage("");
+    setUploadedImages([]);
     setIsLoading(true);
     setStreamingMessage("");
     setStreamingStatus("");
+    setLocalError(null);
 
     try {
+      // Create content for user message that includes images
+      let userContent = userMessage;
+      if (uploadedImages.length > 0) {
+        const imageSection = uploadedImages.map((img, index) => 
+          `![${img.fileName}](${img.url})`
+        ).join('\n\n');
+        userContent = userMessage ? `${userMessage}\n\n${imageSection}` : imageSection;
+      }
+
       // Add user message to shared chat
       await addMessage({
         role: "user",
-        content: userMessage,
+        content: userContent,
         userId: user.id,
       });
 
-      // Send to AI API with streaming
+      // Send to AI API with streaming, including image URLs
       const response = await fetch("/api/ai-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ 
+          message: userMessage || "Please analyze the uploaded image(s)", 
+          imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+          userId: user.id 
+        }),
       });
 
       if (!response.ok) {
@@ -152,6 +185,7 @@ export default function PerplexicoChat() {
 
     } catch (error) {
       console.error("Failed to send message:", error);
+      setLocalError(error instanceof Error ? error.message : "Request failed");
       // Add error message
       await addMessage({
         role: "assistant",
@@ -176,27 +210,40 @@ export default function PerplexicoChat() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-[100dvh] w-full bg-gray-50">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full max-w-none">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center gap-3">
+        <div className="bg-white border-b border-gray-200 p-3 sm:p-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
               <Bot className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Perplexico</h1>
-              <p className="text-sm text-gray-600">AI-powered research assistant</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Perplexico</h1>
+              <p className="text-xs sm:text-sm text-gray-600">AI-powered research assistant</p>
+            </div>
+            <div className="text-xs text-gray-600 flex items-center gap-1 sm:gap-2">
+              {credits && (
+                <>
+                  <span className="whitespace-nowrap">
+                    Daily: {credits.remaining.daily}/{credits.limits.daily}
+                  </span>
+                  <span className="hidden sm:inline">•</span>
+                  {/* <span className="whitespace-nowrap">
+                    /Min: {credits.remaining.perMinute}/{credits.limits.perMinute}
+                  </span> */}
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 w-full">
           {messages && messages.length > 0 ? (
             messages.map((msg) => (
-              <div key={msg._id} className="flex gap-4">
+              <div key={msg._id} className="flex gap-2 sm:gap-4 w-full">
                 <div className="flex-shrink-0">
                   {msg.role === "user" ? (
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
@@ -217,11 +264,93 @@ export default function PerplexicoChat() {
                       {new Date(msg.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 w-full max-w-none">
                     <div className="prose prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap font-sans text-gray-800">
-                        {msg.content}
-                      </pre>
+                      {msg.role === "assistant" ? (
+                        <div className="whitespace-pre-wrap break-words text-gray-800">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              table: ({ children }) => (
+                                <div className="overflow-x-auto my-4 w-full">
+                                  <table className="w-full divide-y divide-gray-200 border border-gray-300 rounded-lg text-xs sm:text-sm">
+                                    {children}
+                                  </table>
+                                </div>
+                              ),
+                              thead: ({ children }) => (
+                                <thead className="bg-gray-50">{children}</thead>
+                              ),
+                              tbody: ({ children }) => (
+                                <tbody className="bg-white divide-y divide-gray-200">{children}</tbody>
+                              ),
+                              tr: ({ children }) => (
+                                <tr className="hover:bg-gray-50">{children}</tr>
+                              ),
+                              th: ({ children }) => (
+                                <th className="px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0">
+                                  {children}
+                                </th>
+                              ),
+                              td: ({ children }) => (
+                                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-900 border-r border-gray-200 last:border-r-0 break-words">
+                                  {children}
+                                </td>
+                              ),
+                              img: ({ src, alt }) => (
+                                <img 
+                                  src={src} 
+                                  alt={alt} 
+                                  className="max-w-full h-auto rounded-lg shadow-sm my-2"
+                                  loading="lazy"
+                                />
+                              ),
+                              a: ({ href, children }) => (
+                                <a 
+                                  href={href} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  {children}
+                                </a>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="text-gray-800">{children}</li>
+                              ),
+                              blockquote: ({ children }) => (
+                                <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-600 my-2">
+                                  {children}
+                                </blockquote>
+                              ),
+                              code: ({ children, className }) => {
+                                const isInline = !className;
+                                return isInline ? (
+                                  <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">
+                                    {children}
+                                  </code>
+                                ) : (
+                                  <code className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto">
+                                    {children}
+                                  </code>
+                                );
+                              },
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <pre className="whitespace-pre-wrap font-sans text-gray-800">
+                          {msg.content}
+                        </pre>
+                      )}
                     </div>
                         
                     {/* Sources */}
@@ -312,34 +441,79 @@ export default function PerplexicoChat() {
         </div>
 
           {/* Input Area */}
-          <div className="p-6 border-t border-gray-200 bg-white">
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder="Ask Perplexico anything..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!message.trim() || isLoading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                Send
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Perplexico can search the web and provide comprehensive answers with sources.
-            </p>
+          <div className="p-2 sm:p-4 md:p-6 border-t border-gray-200 bg-white w-full">
+            {/* Image Preview Section */}
+            {uploadedImages.length > 0 && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-700">Uploaded Images ({uploadedImages.length})</h4>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {uploadedImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-300 bg-white">
+                        <img 
+                          src={image.url} 
+                          alt={image.fileName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        title="Remove image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <p className="text-xs text-gray-500 mt-1 truncate w-20" title={image.fileName}>
+                        {image.fileName}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <ChatInput
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onSubmit={handleSendMessage}
+              loading={isLoading}
+              rows={1}
+              className="w-full max-w-none"
+            >
+              <div className="flex items-end gap-2 w-full">
+                <ChatInputUpload
+                  aria-label="Upload image"
+                  title="Upload image"
+                  onUploaded={handleImageUpload}
+                />
+                <div className="flex-1">
+                  <ChatInputTextArea
+                    placeholder={
+                      credits && credits.remaining.daily === 0
+                        ? "Daily limit reached. Try again later."
+                        : credits && credits.remaining.perMinute === 0
+                        ? "Rate limit reached. Wait a minute."
+                        : uploadedImages.length > 0
+                        ? "Ask about the uploaded image(s) or add a message..."
+                        : "Ask Perplexico anything..."
+                    }
+                    disabled={isLoading || (credits ? credits.remaining.daily === 0 || credits.remaining.perMinute === 0 : false)}
+                  />
+                </div>
+                <ChatInputSubmit aria-label="Send" />
+              </div>
+              {localError && (
+                <p className="text-xs text-red-600 mt-2">{localError}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                {uploadedImages.length > 0 
+                  ? "Perplexico can analyze images and provide insights. Upload images and ask questions about them!"
+                  : "Perplexico can search the web and provide comprehensive answers with sources."
+                }
+              </p>
+            </ChatInput>
           </div>
         </div>
       </div>
