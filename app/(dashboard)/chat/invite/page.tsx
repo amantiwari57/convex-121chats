@@ -2,13 +2,13 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Users, Send, ArrowLeft, Check, Copy } from "lucide-react";
 
-export default function InvitePage() {
+function InvitePageInner() {
   const { user } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,7 +99,7 @@ export default function InvitePage() {
         <div className="text-center">
           <div className="text-4xl mb-4">❌</div>
           <h2 className="text-xl font-semibold text-black mb-2">Chat not found</h2>
-          <p className="text-gray-600 mb-4">The chat you're trying to invite users to doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The chat you&apos;re trying to invite users to doesn&apos;t exist.</p>
           <button
             onClick={() => router.push('/chat')}
             className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-lg transition-colors"
@@ -279,5 +279,22 @@ export default function InvitePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <InvitePageInner />
+    </Suspense>
   );
 }

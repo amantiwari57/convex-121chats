@@ -19,6 +19,7 @@ import {
   XCircle
 } from "lucide-react";
 import { useState } from "react";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 export default function InviteRequestsPage() {
   const { user } = useUser();
@@ -44,13 +45,13 @@ export default function InviteRequestsPage() {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  const handleResponse = async (chatId: string, accept: boolean, inviteId: string) => {
+  const handleResponse = async (chatId: Id<"chat">, accept: boolean, inviteId: string) => {
     if (!user?.id) return;
 
     setProcessingInvites(prev => new Set(prev.add(inviteId)));
     try {
       await respondToInvite({
-        chatId: chatId as any,
+        chatId: chatId,
         invitedUser: user.id,
         accept,
       });
@@ -114,7 +115,7 @@ export default function InviteRequestsPage() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No pending invitations</h3>
             <p className="text-gray-600 mb-6">
-              You don't have any pending chat invitations at the moment.
+              You don&apos;t have any pending chat invitations at the moment.
             </p>
             <button
               onClick={() => router.push('/chat')}
@@ -141,7 +142,7 @@ export default function InviteRequestsPage() {
                           Chat Invitation from {invite.inviter.name || invite.inviter.email || "Unknown User"}
                         </h3>
                         <p className="text-gray-600 mb-3">
-                          You've been invited to join a conversation
+                          You&apos;ve been invited to join a conversation
                         </p>
                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
@@ -208,7 +209,7 @@ export default function InviteRequestsPage() {
                           <div className="bg-gray-50 rounded-lg p-4">
                             <p className="text-xs text-gray-500 mb-2">Latest message:</p>
                             <p className="text-sm text-gray-800 mb-2">
-                              "{invite.chat.lastMessage.body}"
+                              &quot;{invite.chat.lastMessage.body}&quot;
                             </p>
                             <p className="text-xs text-gray-500">
                               {formatTimeAgo(invite.chat.updatedAt)}

@@ -184,7 +184,7 @@ export function PendingInvites({ showInSidebar = false, showDetailed = false }: 
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-600 mb-1">Recent message:</p>
                   <p className="text-sm text-gray-800 truncate">
-                    "{invite.chat.lastMessage.body}"
+                    &quot;{invite.chat.lastMessage.body}&quot;
                   </p>
                 </div>
               )}
