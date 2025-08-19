@@ -56,6 +56,12 @@ function ChatPageContent() {
   );
   const sendMessage = useMutation(api.messages.sendMessage);
   const users = useQuery(api.chats.getAllUsers, {});
+  const unreadCounts = useQuery(api.messages.getUnreadCounts,
+    user?.id ? { userId: user.id } : "skip"
+  ) || {};
+  const pendingInvites = useQuery(api.chats.getPendingInvites,
+    user?.id ? { userId: user.id } : "skip"
+  );
 
   // Create or update user in Convex when user loads
   useEffect(() => {
@@ -160,6 +166,22 @@ function ChatPageContent() {
             </nav>
           </div>
           <div className="flex items-center gap-4">
+            {/* Invite Requests Button */}
+            {pendingInvites && pendingInvites.length > 0 && (
+              <button
+                onClick={() => router.push('/chat/invites')}
+                className="relative text-white hover:text-gray-300 transition-colors flex items-center gap-2"
+                title="View invite requests"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5V3h5v14z" />
+                </svg>
+                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {pendingInvites.length}
+                </span>
+              </button>
+            )}
+            
             <button
               onClick={() => setShowProfileModal(true)}
               className="text-white hover:text-gray-300 transition-colors flex items-center gap-2"
@@ -197,6 +219,9 @@ function ChatPageContent() {
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupContent>
+                {/* Pending Invites Section */}
+                <PendingInvites showInSidebar={true} />
+                
                 <div className="p-2 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
                   <button
                     onClick={() => router.push("/perplexico")}
@@ -231,30 +256,66 @@ function ChatPageContent() {
                   </div>
                 ) : (
                   <div className="space-y-2 p-3">
-                    {chats?.map((chat: Chat) => (
-                      <div
-                        key={chat._id}
-                        onClick={() => handleSelectChat(chat._id)}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors border ${
-                          selectedChatId === chat._id 
-                            ? 'bg-black text-white border-black' 
-                            : 'bg-white hover:bg-gray-100 border-gray-200'
-                        }`}
-                      >
-                        <div className={`font-medium mb-1 text-sm ${selectedChatId === chat._id ? 'text-white' : 'text-black'}`}>
-                          {chat.participants
-                            .filter(p => p !== user?.id)
-                            .map(p => getUserName(p))
-                            .join(', ') || 'Personal Chat'}
+                    {chats?.map((chat: Chat) => {
+                      const unreadCount = unreadCounts?.[chat._id] || 0;
+                      const hasUnread = unreadCount > 0;
+                      
+                      return (
+                        <div
+                          key={chat._id}
+                          onClick={() => handleSelectChat(chat._id)}
+                          className={`p-3 rounded-lg cursor-pointer transition-colors border relative ${
+                            selectedChatId === chat._id 
+                              ? 'bg-black text-white border-black' 
+                              : hasUnread
+                              ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 shadow-sm'
+                              : 'bg-white hover:bg-gray-100 border-gray-200'
+                          }`}
+                        >
+                          <div className={`font-medium mb-1 text-sm flex items-center justify-between ${
+                            selectedChatId === chat._id 
+                              ? 'text-white' 
+                              : hasUnread 
+                              ? 'text-blue-900' 
+                              : 'text-black'
+                          }`}>
+                            <span className="truncate">
+                              {chat.participants
+                                .filter(p => p !== user?.id)
+                                .map(p => getUserName(p))
+                                .join(', ') || 'Personal Chat'}
+                            </span>
+                            {hasUnread && (
+                              <div className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                selectedChatId === chat._id 
+                                  ? 'bg-white text-black' 
+                                  : 'bg-blue-600 text-white'
+                              }`}>
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </div>
+                            )}
+                          </div>
+                          <div className={`text-xs truncate mb-1 ${
+                            selectedChatId === chat._id 
+                              ? 'text-gray-300' 
+                              : hasUnread 
+                              ? 'text-blue-700' 
+                              : 'text-gray-600'
+                          }`}>
+                            {chat.lastMessage.body}
+                          </div>
+                          <div className={`text-xs ${
+                            selectedChatId === chat._id 
+                              ? 'text-gray-400' 
+                              : hasUnread 
+                              ? 'text-blue-600' 
+                              : 'text-gray-500'
+                          }`}>
+                            {new Date(chat.updatedAt).toLocaleDateString()} at {new Date(chat.updatedAt).toLocaleTimeString()}
+                          </div>
                         </div>
-                        <div className={`text-xs truncate mb-1 ${selectedChatId === chat._id ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {chat.lastMessage.body}
-                        </div>
-                        <div className={`text-xs ${selectedChatId === chat._id ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {new Date(chat.updatedAt).toLocaleDateString()} at {new Date(chat.updatedAt).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </SidebarGroupContent>

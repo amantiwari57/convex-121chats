@@ -72,6 +72,15 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
     return readByOthers || false;
   };
 
+  const isMessageUnread = (message: Doc<"messages">) => {
+    // Only check unread status for messages from others
+    if (message.sender === user?.id) return false;
+    
+    // Check if current user has read this message
+    const readByCurrentUser = message.readBy?.some(read => read.userId === user?.id);
+    return !readByCurrentUser;
+  };
+
   if (!messages) {
     return (
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
@@ -102,6 +111,7 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
           const isCurrentUser = message.sender === user?.id;
           const showUserName = index === 0 || messages[index - 1]?.sender !== message.sender;
           const nextMessageSameSender = index < messages.length - 1 && messages[index + 1]?.sender === message.sender;
+          const messageUnread = isMessageUnread(message);
           
           return (
             <div key={message._id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
@@ -113,9 +123,11 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
                 )}
                 <div
                   className={`
-                    px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-sm
+                    px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-sm relative
                     ${isCurrentUser 
                       ? "bg-black text-white ml-auto" 
+                      : messageUnread
+                      ? "bg-blue-50 text-black border border-blue-200 shadow-md"
                       : "bg-white text-black border border-gray-200"
                     }
                     ${showUserName ? "rounded-t-lg" : ""}
@@ -123,6 +135,9 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
                     ${!showUserName && nextMessageSameSender ? "rounded-none" : ""}
                   `}
                 >
+                  {messageUnread && !isCurrentUser && (
+                    <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-600 rounded-full border-2 border-white"></div>
+                  )}
                   <div className="text-sm sm:text-base break-words leading-relaxed">
                     {message.body}
                   </div>

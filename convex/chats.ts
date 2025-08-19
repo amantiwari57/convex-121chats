@@ -150,18 +150,54 @@ export const getPendingInvites = query({
       )
       .collect();
 
-    // Get chat details for each invite
+    // Get detailed information for each invite
     const invitesWithDetails = await Promise.all(
       invites.map(async (invite) => {
         const chat = await ctx.db.get(invite.chatId);
+        
+        // Get inviter details
+        const inviter = await ctx.db
+          .query("users")
+          .withIndex("by_clerk_id", (q) => q.eq("clerkId", invite.invitedBy))
+          .first();
+
+        // Get participant details
+        let participants: any[] = [];
+        if (chat) {
+          participants = await Promise.all(
+            chat.participants.map(async (participantId) => {
+              const user = await ctx.db
+                .query("users")
+                .withIndex("by_clerk_id", (q) => q.eq("clerkId", participantId))
+                .first();
+              return user || { clerkId: participantId, name: "Unknown User", email: "" };
+            })
+          );
+        }
+
+        // Get recent messages count
+        let recentMessagesCount = 0;
+        if (chat) {
+          const recentMessages = await ctx.db
+            .query("messages")
+            .withIndex("by_chat", (q) => q.eq("chat", chat._id))
+            .order("desc")
+            .take(10);
+          recentMessagesCount = recentMessages.length;
+        }
+
         return {
           ...invite,
           chat,
+          inviter: inviter || { name: "Unknown User", email: "", clerkId: invite.invitedBy },
+          participants,
+          recentMessagesCount,
+          inviteAge: Date.now() - invite.createdAt,
         };
       })
     );
 
-    return invitesWithDetails;
+    return invitesWithDetails.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
 
