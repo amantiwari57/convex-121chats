@@ -2,104 +2,17 @@
 
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { HeroSection } from "@/components/ui/hero-section";
+import { HowItWorks } from "@/components/ui/how-it-works";
+import { CTA } from "@/components/ui/cta";
 
 export default function LandingPage() {
   const { user, isLoaded } = useUser();
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-black text-white">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">ChatApp</div>
-            <nav className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="hover:text-gray-300 transition-colors">Features</a>
-              <a href="#how-it-works" className="hover:text-gray-300 transition-colors">How It Works</a>
-              {user && (
-                <Link 
-                  href="/perplexico"
-                  className="hover:text-gray-300 transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  Perplexico AI
-                </Link>
-              )}
-              {!isLoaded ? (
-                <div className="w-6 h-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-              ) : user ? (
-                <Link 
-                  href="/chat"
-                  className="bg-white text-black hover:bg-gray-100 px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Go to Chat
-                </Link>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link 
-                    href="/auth/signin"
-                    className="hover:text-gray-300 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link 
-                    href="/auth/signup"
-                    className="bg-white text-black hover:bg-gray-100 px-6 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Get Started
-                  </Link>
-                </div>
-              )}
-            </nav>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-bold text-black mb-6 leading-tight">
-            Professional
-            <br />
-            <span className="text-gray-600">Communication</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto">
-            Experience seamless real-time messaging with read receipts, professional design, 
-            and secure conversations for modern teams.
-          </p>
-          
-          {!isLoaded ? (
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-black border-t-transparent"></div>
-          ) : user ? (
-            <div className="space-y-6">
-              <p className="text-lg text-gray-600">Welcome back, {user.fullName || user.emailAddresses[0]?.emailAddress}!</p>
-              <Link 
-                href="/chat"
-                className="bg-black hover:bg-gray-800 text-white font-semibold py-4 px-12 rounded-xl transition-colors inline-block text-lg"
-              >
-                Continue to Chat
-              </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                href="/auth/signup"
-                className="bg-black hover:bg-gray-800 text-white font-semibold py-4 px-12 rounded-xl transition-colors text-lg"
-              >
-                Start Free Trial
-              </Link>
-              <Link 
-                href="/auth/signin"
-                className="border-2 border-black text-black hover:bg-black hover:text-white font-semibold py-4 px-12 rounded-xl transition-colors text-lg"
-              >
-                Sign In
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Features Section */}
       <section id="features" className="py-20 bg-gray-50">
@@ -154,79 +67,10 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-black mb-6">
-              Get Started in Minutes
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Simple onboarding process gets your team chatting in no time
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <StepCard
-              number="1"
-              title="Create Account"
-              description="Sign up with your email address and verify your account securely"
-            />
-            <StepCard
-              number="2"
-              title="Start Conversation"
-              description="Create your first chat room or join an existing conversation"
-            />
-            <StepCard
-              number="3"
-              title="Invite Your Team"
-              description="Send invitations to team members and build your communication network"
-            />
-            <StepCard
-              number="4"
-              title="Chat Professionally"
-              description="Enjoy seamless messaging with read receipts and professional features"
-            />
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
 
       {/* CTA Section */}
-      <section className="py-20 bg-black text-white">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Ready to Transform Your Communication?
-          </h2>
-          <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-            Join thousands of teams who have upgraded to professional messaging
-          </p>
-          
-          {!isLoaded ? (
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
-          ) : user ? (
-            <Link 
-              href="/chat"
-              className="bg-white text-black hover:bg-gray-100 font-semibold py-4 px-12 rounded-xl transition-colors inline-block text-lg"
-            >
-              Continue to Chat
-            </Link>
-          ) : (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                href="/auth/signup"
-                className="bg-white text-black hover:bg-gray-100 font-semibold py-4 px-12 rounded-xl transition-colors text-lg"
-              >
-                Start Free Trial
-              </Link>
-              <Link 
-                href="/auth/signin"
-                className="border-2 border-white text-white hover:bg-white hover:text-black font-semibold py-4 px-12 rounded-xl transition-colors text-lg"
-              >
-                Sign In
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
+      <CTA />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
@@ -253,18 +97,6 @@ function FeatureCard({ title, description, icon }: { title: string; description:
   return (
     <div className="bg-white border border-gray-200 p-8 rounded-xl text-center hover:shadow-lg transition-shadow">
       <div className="text-4xl mb-6">{icon}</div>
-      <h3 className="text-xl font-semibold text-black mb-4">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-function StepCard({ number, title, description }: { number: string; title: string; description: string }) {
-  return (
-    <div className="text-center">
-      <div className="bg-black text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-        {number}
-      </div>
       <h3 className="text-xl font-semibold text-black mb-4">{title}</h3>
       <p className="text-gray-600 leading-relaxed">{description}</p>
     </div>

@@ -63,6 +63,15 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
     return user?.name || user?.email || "Unknown User";
   };
 
+  const getUserAvatar = (userId: string) => {
+    const userData = users?.find(u => u.clerkId === userId);
+    if (!userData) return null;
+    
+    // Access imageUrl from the user object
+    const userWithImage = userData as typeof userData & { imageUrl?: string };
+    return userWithImage.imageUrl || null;
+  };
+
   const isMessageRead = (message: Doc<"messages">) => {
     // Only show read receipts for current user's own messages
     if (message.sender !== user?.id) return false;
@@ -114,7 +123,30 @@ export function ChatMessages({ chatId }: { chatId: Id<"chat"> }) {
           const messageUnread = isMessageUnread(message);
           
           return (
-            <div key={message._id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
+            <div key={message._id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} gap-2`}>
+              {/* Avatar for other users */}
+              {!isCurrentUser && (
+                <div className="flex-shrink-0">
+                  {showUserName ? (
+                    getUserAvatar(message.sender) ? (
+                      <img
+                        src={getUserAvatar(message.sender)!}
+                        alt={getUserName(message.sender)}
+                        className="w-8 h-8 rounded-full border border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-xs font-medium text-gray-600">
+                          {getUserName(message.sender).charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )
+                  ) : (
+                    <div className="w-8 h-8"></div> // Spacer for alignment
+                  )}
+                </div>
+              )}
+              
               <div className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] ${isCurrentUser ? "order-2" : "order-1"}`}>
                 {!isCurrentUser && showUserName && (
                   <div className="text-xs text-gray-600 mb-1 px-2">

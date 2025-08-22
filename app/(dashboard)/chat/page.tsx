@@ -46,6 +46,7 @@ function ChatPageContent() {
   const [message, setMessage] = useState('');
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMobileChatView, setShowMobileChatView] = useState(false);
   const { setOpenMobile } = useSidebar();
   
   const createOrUpdateUser = useMutation(api.auth.createOrUpdateUser);
@@ -70,6 +71,7 @@ function ChatPageContent() {
         clerkId: user.id,
         email: user.emailAddresses[0].emailAddress,
         name: user.fullName || user.firstName || user.emailAddresses[0].emailAddress,
+        imageUrl: user.imageUrl,
       });
     }
   }, [user, createOrUpdateUser]);
@@ -113,6 +115,7 @@ function ChatPageContent() {
 
   const handleChatCreated = (chatId: Id<"chat">) => {
     setSelectedChatId(chatId);
+    setShowMobileChatView(true);
   };
 
   const handleSignOut = () => {
@@ -128,13 +131,51 @@ function ChatPageContent() {
         userId: user.id,
       });
     }
-    // Auto close sidebar on mobile
+    // Auto close sidebar on mobile and show chat view
     setOpenMobile(false);
+    setShowMobileChatView(true);
+  };
+
+  const handleBackToChats = () => {
+    setShowMobileChatView(false);
+    setSelectedChatId(null);
   };
 
   const getUserName = (userId: string) => {
     const convexUser = users?.find(u => u.clerkId === userId);
     return convexUser?.name || convexUser?.email || "Unknown User";
+  };
+
+  const getUserAvatar = (userId: string) => {
+    const convexUser = users?.find(u => u.clerkId === userId);
+    if (!convexUser) return null;
+    
+    // Access imageUrl from the user object
+    const userWithImage = convexUser as typeof convexUser & { imageUrl?: string };
+    return userWithImage.imageUrl || null;
+  };
+
+  const getChatAvatar = (participants: string[]) => {
+    // Filter out current user and get first available avatar
+    const otherParticipants = participants.filter(p => p !== user?.id);
+    
+    // Find first participant with an avatar
+    for (const participantId of otherParticipants) {
+      const avatarUrl = getUserAvatar(participantId);
+      if (avatarUrl) {
+        const userName = getUserName(participantId);
+        return { avatarUrl, participantId, userName };
+      }
+    }
+    
+    // If no avatar found, return first participant's info for fallback
+    const firstParticipant = otherParticipants[0];
+    if (firstParticipant) {
+      const userName = getUserName(firstParticipant);
+      return { avatarUrl: null, participantId: firstParticipant, userName };
+    }
+    
+    return { avatarUrl: null, participantId: null, userName: 'Unknown' };
   };
 
   const selectedChat = chats?.find(chat => chat._id === selectedChatId);
@@ -186,9 +227,17 @@ function ChatPageContent() {
               onClick={() => setShowProfileModal(true)}
               className="text-white hover:text-gray-300 transition-colors flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+              {user?.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt={user.fullName || "Profile"}
+                  className="w-8 h-8 rounded-full border-2 border-gray-300"
+                />
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
               <span className="text-sm hidden sm:inline">
                 {user?.fullName || user?.emailAddresses[0]?.emailAddress}
               </span>
@@ -204,7 +253,201 @@ function ChatPageContent() {
       </header>
 
       <div className="flex-1 flex overflow-hidden w-full">
-        <Sidebar collapsible="offcanvas" className="bg-gray-50 border-r border-gray-300">
+        {/* Mobile Chat List */}
+        <div className={`w-full md:hidden ${showMobileChatView ? 'hidden' : 'flex'} flex-col bg-gray-50`}>
+          <div className="bg-white border-b border-gray-300 p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-black">Chats</h2>
+              <button
+                className="bg-black hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm transition-colors font-medium"
+                onClick={() => setShowNewChatModal(true)}
+              >
+                + New
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            {/* Pending Invites Section */}
+            <PendingInvites showInSidebar={true} />
+            
+            <div className="p-2 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+              <button
+                onClick={() => router.push("/perplexico")}
+                className="w-full p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center gap-3 shadow-sm"
+              >
+                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-sm">Perplexico AI</div>
+                  <div className="text-xs text-white text-opacity-80">AI-powered research assistant</div>
+                </div>
+                <div className="ml-auto">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+
+            {chats?.length === 0 ? (
+              <div className="text-gray-600 text-center py-8 px-4">
+                <div className="text-4xl mb-4">💬</div>
+                <div className="text-lg font-medium mb-2 text-black">No conversations yet</div>
+                <div className="text-sm">Start your first conversation!</div>
+              </div>
+            ) : (
+              <div className="space-y-1 p-2">
+                {chats?.map((chat: Chat) => {
+                  const unreadCount = unreadCounts?.[chat._id] || 0;
+                  const hasUnread = unreadCount > 0;
+                  
+                  return (
+                    <div
+                      key={chat._id}
+                      onClick={() => handleSelectChat(chat._id)}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors border ${
+                        hasUnread
+                        ? 'bg-blue-50 hover:bg-blue-100 border-blue-200 shadow-sm'
+                        : 'bg-white hover:bg-gray-100 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div className="flex-shrink-0">
+                          {(() => {
+                            const { avatarUrl, userName } = getChatAvatar(chat.participants);
+                            
+                            return avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt={userName}
+                                className="w-12 h-12 rounded-full border border-gray-200"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-600">
+                                  {userName.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        
+                        {/* Chat info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm text-black truncate">
+                              {chat.participants
+                                .filter(p => p !== user?.id)
+                                .map(p => getUserName(p))
+                                .join(', ') || 'Personal Chat'}
+                            </span>
+                            {hasUnread && (
+                              <div className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 bg-blue-600 text-white">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-600 truncate">
+                            {chat.lastMessage.body}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {new Date(chat.updatedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Chat View */}
+        <div className={`w-full md:hidden ${showMobileChatView ? 'flex' : 'hidden'} flex-col`}>
+          {selectedChatId && selectedChat ? (
+            <>
+              {/* Mobile Chat Header */}
+              <div className="bg-white border-b border-gray-300 px-4 py-3 flex items-center gap-3">
+                <button
+                  onClick={handleBackToChats}
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                {(() => {
+                  const { avatarUrl, userName } = getChatAvatar(selectedChat.participants);
+                  
+                  return avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={userName}
+                      className="w-10 h-10 rounded-full border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">
+                        {userName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  );
+                })()}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-black">
+                    {selectedChat.participants
+                      .filter(p => p !== user?.id)
+                      .map(p => getUserName(p))
+                      .join(', ') || 'Personal Chat'}
+                  </h3>
+                  <div className="text-sm text-gray-600">
+                    {selectedChat.participants.length} participant{selectedChat.participants.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <InviteButton chatId={selectedChatId} />
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 bg-gray-50 min-h-0 flex flex-col w-full">
+                <ChatMessages chatId={selectedChatId} />
+              </div>
+
+              {/* Message Input */}
+              <div className="bg-white border-t border-gray-300 p-3 flex-shrink-0 w-full">
+                <div className="flex items-end space-x-2 w-full">
+                  <FileUpload
+                    onFileUpload={handleFileUpload}
+                    disabled={!selectedChatId}
+                  />
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 rounded-lg border text-black border-gray-300 px-3 py-2 focus:outline-none focus:border-black focus:ring-1 focus:ring-black text-sm"
+                  />
+                  <button
+                    onClick={() => handleSendMessage()}
+                    disabled={!message.trim()}
+                    className="bg-black text-white rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        {/* Desktop Sidebar */}
+        <Sidebar collapsible="offcanvas" className="hidden md:flex bg-gray-50 border-r border-gray-300">
           <SidebarHeader className="bg-white border-b border-gray-300">
             <div className="flex items-center justify-between p-4">
               <h2 className="text-lg font-semibold text-black">Conversations</h2>
@@ -272,46 +515,76 @@ function ChatPageContent() {
                               : 'bg-white hover:bg-gray-100 border-gray-200'
                           }`}
                         >
-                          <div className={`font-medium mb-1 text-sm flex items-center justify-between ${
-                            selectedChatId === chat._id 
-                              ? 'text-white' 
-                              : hasUnread 
-                              ? 'text-blue-900' 
-                              : 'text-black'
-                          }`}>
-                            <span className="truncate">
-                              {chat.participants
-                                .filter(p => p !== user?.id)
-                                .map(p => getUserName(p))
-                                .join(', ') || 'Personal Chat'}
-                            </span>
-                            {hasUnread && (
-                              <div className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                          <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="flex-shrink-0">
+                              {(() => {
+                                const { avatarUrl, userName } = getChatAvatar(chat.participants);
+                                
+                                return avatarUrl ? (
+                                  <img
+                                    src={avatarUrl}
+                                    alt={userName}
+                                    className="w-12 h-12 rounded-full border border-gray-200"
+                                  />
+                                ) : (
+                                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                    selectedChatId === chat._id 
+                                      ? 'bg-white text-black' 
+                                      : 'bg-gray-300 text-gray-600'
+                                  }`}>
+                                    <span className="text-sm font-medium">
+                                      {userName.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            
+                            {/* Chat info */}
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-medium mb-1 text-sm flex items-center justify-between ${
                                 selectedChatId === chat._id 
-                                  ? 'bg-white text-black' 
-                                  : 'bg-blue-600 text-white'
+                                  ? 'text-white' 
+                                  : hasUnread 
+                                  ? 'text-blue-900' 
+                                  : 'text-black'
                               }`}>
-                                {unreadCount > 99 ? '99+' : unreadCount}
+                                <span className="truncate">
+                                  {chat.participants
+                                    .filter(p => p !== user?.id)
+                                    .map(p => getUserName(p))
+                                    .join(', ') || 'Personal Chat'}
+                                </span>
+                                {hasUnread && (
+                                  <div className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                    selectedChatId === chat._id 
+                                      ? 'bg-white text-black' 
+                                      : 'bg-blue-600 text-white'
+                                  }`}>
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className={`text-xs truncate mb-1 ${
-                            selectedChatId === chat._id 
-                              ? 'text-gray-300' 
-                              : hasUnread 
-                              ? 'text-blue-700' 
-                              : 'text-gray-600'
-                          }`}>
-                            {chat.lastMessage.body}
-                          </div>
-                          <div className={`text-xs ${
-                            selectedChatId === chat._id 
-                              ? 'text-gray-400' 
-                              : hasUnread 
-                              ? 'text-blue-600' 
-                              : 'text-gray-500'
-                          }`}>
-                            {new Date(chat.updatedAt).toLocaleDateString()} at {new Date(chat.updatedAt).toLocaleTimeString()}
+                              <div className={`text-xs truncate mb-1 ${
+                                selectedChatId === chat._id 
+                                  ? 'text-gray-300' 
+                                  : hasUnread 
+                                  ? 'text-blue-700' 
+                                  : 'text-gray-600'
+                              }`}>
+                                {chat.lastMessage.body}
+                              </div>
+                              <div className={`text-xs ${
+                                selectedChatId === chat._id 
+                                  ? 'text-gray-400' 
+                                  : hasUnread 
+                                  ? 'text-blue-600' 
+                                  : 'text-gray-500'
+                              }`}>
+                                {new Date(chat.updatedAt).toLocaleDateString()} at {new Date(chat.updatedAt).toLocaleTimeString()}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -323,21 +596,42 @@ function ChatPageContent() {
           </SidebarContent>
         </Sidebar>
 
-        <SidebarInset className="flex-1 w-full max-w-none">
+        {/* Desktop Chat View */}
+        <SidebarInset className="hidden md:flex flex-1 w-full max-w-none">
           <div className="flex-1 flex flex-col min-w-0 w-full h-full max-w-none">
             {selectedChatId && selectedChat ? (
               <>
                 <div className="bg-white border-b border-gray-300 px-4 sm:px-6 py-4 flex-shrink-0">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-black">
-                        {selectedChat.participants
-                          .filter(p => p !== user?.id)
-                          .map(p => getUserName(p))
-                          .join(', ') || 'Personal Chat'}
-                      </h3>
-                      <div className="text-sm text-gray-600">
-                        {selectedChat.participants.length} participant{selectedChat.participants.length !== 1 ? 's' : ''}
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      {(() => {
+                        const { avatarUrl, userName } = getChatAvatar(selectedChat.participants);
+                        
+                        return avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt={userName}
+                            className="w-10 h-10 rounded-full border border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-600">
+                              {userName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                      <div>
+                        <h3 className="text-lg font-semibold text-black">
+                          {selectedChat.participants
+                            .filter(p => p !== user?.id)
+                            .map(p => getUserName(p))
+                            .join(', ') || 'Personal Chat'}
+                        </h3>
+                        <div className="text-sm text-gray-600">
+                          {selectedChat.participants.length} participant{selectedChat.participants.length !== 1 ? 's' : ''}
+                        </div>
                       </div>
                     </div>
                     <InviteButton chatId={selectedChatId} />

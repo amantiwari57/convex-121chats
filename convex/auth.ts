@@ -6,6 +6,7 @@ export const createOrUpdateUser = mutation({
     clerkId: v.string(),
     email: v.string(),
     name: v.string(),
+    imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check if user already exists by Clerk ID
@@ -19,6 +20,7 @@ export const createOrUpdateUser = mutation({
       await ctx.db.patch(existingUser._id, {
         email: args.email,
         name: args.name,
+        imageUrl: args.imageUrl,
         updatedAt: Date.now(),
       });
       return existingUser._id;
@@ -29,6 +31,7 @@ export const createOrUpdateUser = mutation({
       clerkId: args.clerkId,
       email: args.email,
       name: args.name,
+      imageUrl: args.imageUrl,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -70,6 +73,7 @@ export const updateUser = mutation({
     clerkId: v.string(),
     name: v.optional(v.string()),
     email: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db

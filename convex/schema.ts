@@ -11,6 +11,7 @@ export default defineSchema({
     clerkId: v.string(), // Clerk user ID
     email: v.string(),
     name: v.string(),
+    imageUrl: v.optional(v.string()), // Clerk profile image URL
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_clerk_id", ["clerkId"])
